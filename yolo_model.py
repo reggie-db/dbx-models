@@ -1,28 +1,19 @@
-import mlflow.pyfunc
-from typing import Any
-import pandas as pd
-import numpy as np
 import base64
-import json
+from typing import Any
+
 import cv2
+import mlflow.pyfunc
+import numpy as np
+import pandas as pd
+
+#sys.path.append(str(Path(__file__).resolve().parents[1]))
+from mlfow_models import YoloPythonModel
 
 
-class YoloModel(mlflow.pyfunc.PythonModel):
+class YoloModel(YoloPythonModel):
 
     def load_context(self, context):
-        import os
-        import tempfile
-        from pathlib import Path
-
-        yolo_config_dir = (
-            Path(tempfile.gettempdir())
-        / "yolo_config"
-        )
-        yolo_config_dir.mkdir(parents=True, exist_ok=True)
-        os.environ["YOLO_CONFIG_DIR"] = str(yolo_config_dir)
-
-        from ultralytics import YOLO
-
+        super().load_context(context)
         self.model = YOLO(context.artifacts["weights"])
         self.class_names = self.model.names  # id -> label
 
