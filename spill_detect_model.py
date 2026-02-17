@@ -1,10 +1,9 @@
 """
-Hot dog detection model using Roboflow inference SDK.
+Spill detection model using Roboflow inference SDK.
 
-This model uses the Roboflow inference SDK to detect hot dogs in images.
+This model uses the Roboflow inference SDK to detect spills in images.
 The model is loaded from Roboflow at runtime using the ROBOFLOW_API_KEY
-environment variable. Includes label normalization for the "Salchicha Abajo"
-class name which maps to "Hot Dog".
+environment variable.
 """
 
 import base64
@@ -18,31 +17,16 @@ import pandas as pd
 from mlfow_models import YoloPythonModel
 
 
-def _normalize_class_name(raw_class: str) -> str:
-    """Normalize class names, handling known label variations.
 
-    Args:
-        raw_class: Raw class name from model prediction.
+class SpillDetectModel(YoloPythonModel):
+    """MLflow PyFunc model for spill detection using Roboflow inference.
 
-    Returns:
-        Normalized class name (e.g., "Salchicha Abajo" -> "Hot Dog").
-    """
-    normalized = raw_class.strip().lower()
-    if normalized == "salchicha abajo":
-        return "Hot Dog"
-    return raw_class
-
-
-class HotDogDetectModel(YoloPythonModel):
-    """MLflow PyFunc model for hot dog detection using Roboflow inference.
-
-    This model uses the Roboflow inference SDK to detect hot dogs.
+    This model uses the Roboflow inference SDK to detect spills.
     Requires ROBOFLOW_API_KEY environment variable to be set.
-    Filters detections to only include "Hot Dog" class.
     """
 
-    ROBOFLOW_PROJECT = "hot-dog-zxusc"
-    ROBOFLOW_VERSION = 3
+    ROBOFLOW_PROJECT = "spills-ax5xv"
+    ROBOFLOW_VERSION = 2
     MODEL_ID = f"{ROBOFLOW_PROJECT}/{ROBOFLOW_VERSION}"
     CONFIDENCE_THRESHOLD = 0.40
 
@@ -56,7 +40,7 @@ class HotDogDetectModel(YoloPythonModel):
 
         from inference import get_model
         self.model = get_model(
-            model_id=HotDogDetectModel.MODEL_ID,
+            model_id=SpillDetectModel.MODEL_ID,
             api_key=os.environ["ROBOFLOW_API_KEY"],
         )
 
@@ -75,14 +59,14 @@ class HotDogDetectModel(YoloPythonModel):
         return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     def predict(self, context, model_input: pd.DataFrame) -> pd.DataFrame:
-        """Run hot dog detection on batch of images.
+        """Run spill detection on batch of images.
 
         Args:
             context: MLflow prediction context.
             model_input: DataFrame with 'image_base64' column.
 
         Returns:
-            DataFrame with 'detections' column containing hot dog detection results.
+            DataFrame with 'detections' column containing spill detection results.
         """
         images = []
         row_map = []
@@ -105,9 +89,7 @@ class HotDogDetectModel(YoloPythonModel):
             detections = []
 
             for p in image_result.predictions:
-                label = _normalize_class_name(p.class_name)
-                if "hot dog" != label.lower():
-                    continue
+                label = p.class_name
                 cx, cy, w, h = p.x, p.y, p.width, p.height
 
                 detections.append({
@@ -125,4 +107,4 @@ class HotDogDetectModel(YoloPythonModel):
         return pd.DataFrame({"detections": output})
 
 
-mlflow.models.set_model(HotDogDetectModel())
+mlflow.models.set_model(SpillDetectModel())

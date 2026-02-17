@@ -1,9 +1,9 @@
 """
-Truck detection model using SAHI sliced prediction for improved detection of small objects.
+Truck detection model using Ultralytics with SAHI integration.
 
-This model uses SAHI (Sliced Aided Hyper Inference) with an Ultralytics backbone to detect
-trucks in images. Sliced prediction is useful for large images where naive full-frame
-inference can miss small objects.
+This model uses an Ultralytics backbone (loaded via SAHI's AutoDetectionModel) to detect
+trucks in images. Detections are filtered to only include the "truck" class and
+fully-contained duplicate boxes are removed.
 """
 
 import base64
@@ -19,6 +19,17 @@ from mlfow_models import YoloPythonModel
 
 
 def _remove_fully_contained_boxes(detections: list[dict]) -> list[dict]:
+    """Remove detections that are fully contained within another detection.
+
+    Sorts detections by area (largest first) and removes any detection whose
+    bounding box is completely inside a larger detection's box.
+
+    Args:
+        detections: List of detection dictionaries with x1, y1, x2, y2 keys.
+
+    Returns:
+        Filtered list with nested detections removed.
+    """
     if not detections:
         return detections
 
@@ -108,6 +119,15 @@ class TruckDetectModel(YoloPythonModel):
         return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     def predict(self, context, model_input: pd.DataFrame) -> pd.DataFrame:
+        """Run truck detection on batch of images.
+
+        Args:
+            context: MLflow prediction context.
+            model_input: DataFrame with 'image_base64' column.
+
+        Returns:
+            DataFrame with 'detections' column containing truck detection results.
+        """
         import torch
 
         # -------------------------
